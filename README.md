@@ -16,13 +16,13 @@ Frontend cho hệ thống mạng xã hội dành cho cựu sinh viên, giảng v
 - **JWT** (kiểm tra đăng nhập & phân quyền)
 
 3. Cài đặt
-# Clone dự án
+Clone dự án
 git clone https://github.com/QuangTruongPractice/socialNetwork-Frontend.git
 
-# Cài đặt dependencies
+Cài đặt dependencies
 npm install
 
-# Chạy dev mode
+Chạy dev mode
 npm start
 
 4. Chức năng chính
