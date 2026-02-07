@@ -26,15 +26,25 @@ const Login = () => {
 
   const login = async (e) => {
     e.preventDefault();
+    console.info("Login attempt:", user.email);
 
     try {
       setLoading(true);
       setError(null);
+
+      console.info("Calling login API...");
       let res = await Apis.post(endpoints["login"], {
         ...user,
       });
-      cookie.save("token", res.data.token);
+      console.info("Login API success, token received:", res.data);
+
+      const token = res.data.token;
+      cookie.save("token", token);
+
+      console.info("Fetching user info...");
       let u = await authApis().get(endpoints["user"]);
+      console.info("User info received:", u.data);
+      console.log("DEBUG - User Object Structure:", JSON.stringify(u.data, null, 2));
 
       localStorage.setItem("user", JSON.stringify(u.data));
 
@@ -42,11 +52,11 @@ const Login = () => {
         type: "login",
         payload: u.data,
       });
+      console.info("User dispatched to context.");
 
-      
     } catch (ex) {
-      console.error(ex);
-      setError(ex.response.data || "Đăng nhập thất bại");
+      console.error("Login error:", ex);
+      setError(ex.response?.data || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }

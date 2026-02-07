@@ -10,20 +10,24 @@ const Home = () => {
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
 
-  const loadPosts = async () => {
-    try {
-      setLoading(true);
-      const data = await getPosts(page);
-      if (page === 1) setPosts(data);
-      else setPosts((prev) => [...prev, ...data]);
-    } catch (error) {
-      console.error("Lỗi khi load bài viết:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await getPosts(page);
+        if (Array.isArray(data)) {
+          if (page === 1) setPosts(data);
+          else setPosts((prev) => [...prev, ...data]);
+        } else {
+          console.error("Dữ liệu nhận được không phải là mảng:", data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi load bài viết:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadPosts();
   }, [page]);
 
@@ -51,7 +55,7 @@ const Home = () => {
       <PostForm onPostCreated={handlePostCreated} />
       {posts.map((p) =>
         Array.isArray(p.post.surveyOptions) &&
-        p.post.surveyOptions.length > 0 ? (
+          p.post.surveyOptions.length > 0 ? (
           <SurveyCard key={p.post.id} post={p.post} totalReacts={p.post.totalReacts}
           />
         ) : (

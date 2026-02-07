@@ -7,9 +7,10 @@ import SearchBar from "./SearchBar";
 
 const Header = () => {
   const [user, dispatch] = useContext(MyUserContext);
+  console.log("DEBUG - Header User State:", user);
 
   const avatar = user?.avatar;
-  const fullname = user?.firstName + " " + user?.lastName;
+  const fullname = (user?.firstName && user?.lastName) ? `${user.firstName} ${user.lastName}` : "User";
   const position = user?.profile?.position || "";
 
   return (
@@ -37,7 +38,7 @@ const Header = () => {
               <Nav.Link as={Link} to="/notification" className="mx-2">
                 Thông báo
               </Nav.Link>
-              <Nav.Link as={Link} to="/" className="mx-2" onClick={() => dispatch({"type": "logout"})}> 
+              <Nav.Link as={Link} to="/" className="mx-2" onClick={() => dispatch({ "type": "logout" })}>
                 Thoát
               </Nav.Link>
             </Nav>

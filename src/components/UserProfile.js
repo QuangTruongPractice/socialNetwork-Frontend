@@ -12,20 +12,20 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const { userId } = useParams();
 
-  const loadData = async () => {
-    try {
-      const res = await userProfile(userId);
-      setData(res);
-      setRole(res.role);
-    } catch (err) {
-      console.error("Lỗi khi tải hồ sơ:", err);
-      console.error("Chi tiết lỗi:", err.response?.data || err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await userProfile(userId);
+        setData(res);
+        setRole(res.role);
+      } catch (err) {
+        console.error("Lỗi khi tải hồ sơ:", err);
+        console.error("Chi tiết lỗi:", err.response?.data || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadData();
   }, [userId]);
 
@@ -43,15 +43,15 @@ const UserProfile = () => {
       <Profile profile={data.profile} role={role} user={data.user} />
 
       <Row className="mt-3">
-        {data.posts.length === 0 ? (
+        {!data?.posts || data.posts.length === 0 ? (
           <p className="text-muted">Bạn chưa có bài viết nào.</p>
         ) : (
           data.posts.map((p) => (
             <Col md={6} className="mb-4" key={p.id}>
-              {p.voteOptions && p.voteOptions.length > 0 ? (
+              {p.surveyOptions && p.surveyOptions.length > 0 ? (
                 <SurveyCard post={p} totalReacts={p.totalReacts} />
               ) : (
-                <PostCard post={p} totalReacts={p.totalReacts}/>
+                <PostCard post={p} totalReacts={p.totalReacts} />
               )}
             </Col>
           ))

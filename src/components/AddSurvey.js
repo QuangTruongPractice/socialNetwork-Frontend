@@ -10,9 +10,9 @@ export default function AddSurvey({ onClose, onPostCreated }) {
   const [optionInput, setOptionInput] = useState("");
   const [options, setOptions] = useState([]);
   const formRef = useRef();
-  const fileRef = useRef();
   const [postForm, setPostForm] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const validate = () => {
     if (!postForm.content || postForm.content.trim().length < 5) {
@@ -48,8 +48,10 @@ export default function AddSurvey({ onClose, onPostCreated }) {
         const formData = new FormData();
         for (let key in postForm) formData.append(key, postForm[key]);
 
-        if (fileRef.current?.files?.[0]) {
-          formData.append("image", fileRef.current.files[0]);
+        if (selectedFiles.length > 0) {
+          selectedFiles.forEach(item => {
+            formData.append("image", item.file);
+          });
         }
 
         options.forEach((opt) => {
@@ -86,7 +88,7 @@ export default function AddSurvey({ onClose, onPostCreated }) {
               setPostForm({ ...postForm, [e.target.name]: e.target.value })
             }
           />
-          <UploadImage fileRef={fileRef} />
+          <UploadImage files={selectedFiles} setFiles={setSelectedFiles} />
 
           <Form.Group className="mt-3">
             <Form.Label>Lựa chọn khảo sát</Form.Label>

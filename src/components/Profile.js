@@ -25,27 +25,35 @@ const Profile = ({ profile, role, user }) => {
   const [currentUser] = useContext(MyUserContext);
   const [showModal, setShowModal] = useState(false);
 
+  useEffect(() => {
+    const checkFollowing = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await authApis().get(endpoints["check-follow"](user.id));
+        setIsFollowing(res.data.following);
+      } catch (err) {
+        console.error("Lỗi khi kiểm tra theo dõi:", err);
+      }
+    };
+
+    checkFollowing();
+  }, [user?.id]);
+
   const handleImageClick = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
-  const checkFollowing = async () => {
-    try {
-      const res = await authApis().get(endpoints["check-follow"](user.id));
-      setIsFollowing(res.data.following);
-    } catch (err) {
-      console.error("Lỗi khi kiểm tra theo dõi:", err);
-    }
-  };
-
-  useEffect(() => {
-    checkFollowing();
-  }, []);
+  if (!user) {
+    return (
+      <Container className="mt-4 text-center">
+        <div className="alert alert-warning">Đang tải thông tin...</div>
+      </Container>
+    );
+  }
 
   const follow = async (id) => {
+    if (!currentUser?.id) return;
     try {
       if (currentUser.id === id) {
-        console.info(currentUser.id);
-        console.info(id);
         return;
       } else {
         await authApis().post(endpoints["follow"](id));
@@ -70,14 +78,12 @@ const Profile = ({ profile, role, user }) => {
     return `room_${sorted[0]}_${sorted[1]}`;
   };
 
-  const chatRoomId = getChatRoomId(currentUser.id, user.id);
+  const chatRoomId = (currentUser?.id && user?.id) ? getChatRoomId(currentUser.id, user.id) : null;
 
   if (!profile) {
-    return (
-      <Container className="mt-4">
-        <div className="alert alert-warning">Profile not found.</div>
-      </Container>
-    );
+    // Gracefully handle missing profile record (e.g. for some roles or internal errors)
+    // We still render the main part of the user info fetched from 'user'
+    console.warn("Profile details not found for user:", user.id);
   }
 
   const getRoleInfo = (role) => {
@@ -98,7 +104,7 @@ const Profile = ({ profile, role, user }) => {
   return (
     <Container className="mt-4">
       <Card className="mb-4 overflow-hidden">
-        {profile.coverImage && (
+        {profile?.coverImage ? (
           <div
             style={{
               backgroundImage: `url(${profile.coverImage})`,
@@ -110,6 +116,8 @@ const Profile = ({ profile, role, user }) => {
             }}
             onClick={handleImageClick}
           />
+        ) : (
+          <div className="bg-secondary" style={{ height: "200px" }} />
         )}
 
         <Card.Body>
@@ -171,11 +179,11 @@ const Profile = ({ profile, role, user }) => {
           <Image src={profile.coverImage} fluid />
         </Modal.Body>
       </Modal>
-      {showChat && (
+      {showChat && chatRoomId && (
         <ChatPopup
           roomId={chatRoomId}
-          currentUser={user}
-          targetUser={profile}
+          currentUser={currentUser || user}
+          targetUser={user}
           onClose={() => setShowChat(false)}
         />
       )}

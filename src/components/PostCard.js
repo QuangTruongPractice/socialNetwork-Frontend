@@ -44,6 +44,8 @@ const PostCard = ({ post, totalReacts }) => {
           id={post.id}
           content={post.content}
           image={post.image}
+          video={post.video}
+          medias={post.medias}
         />
         <Row className="mt-3 pt-2 border-top text-muted small align-items-center">
           <Col>
@@ -67,7 +69,7 @@ const PostCard = ({ post, totalReacts }) => {
                 </Button>
 
                 {showReactions && (
-                  <ReactionButton onSelect={handleReaction}/>
+                  <ReactionButton onSelect={handleReaction} />
                 )}
               </div>
 

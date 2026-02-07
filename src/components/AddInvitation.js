@@ -13,8 +13,8 @@ export default function AddInvitation({ onClose, onPostCreated }) {
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
   const [postForm, setPostForm] = useState({});
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const formRef = useRef();
-  const fileRef = useRef();
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -27,7 +27,7 @@ export default function AddInvitation({ onClose, onPostCreated }) {
       try {
         const accRes = await searchAccount(search);
         const groupRes = await searchGroup(search);
-          
+
         const mappedAcc = accRes.map((a) => ({
           type: "account",
           id: a.id,
@@ -89,8 +89,10 @@ export default function AddInvitation({ onClose, onPostCreated }) {
         const formData = new FormData();
         for (let key in postForm) formData.append(key, postForm[key]);
 
-        if (fileRef.current?.files?.[0]) {
-          formData.append("image", fileRef.current.files[0]);
+        if (selectedFiles.length > 0) {
+          selectedFiles.forEach(item => {
+            formData.append("image", item.file);
+          });
         }
 
         selected.forEach((item) => {
@@ -127,7 +129,7 @@ export default function AddInvitation({ onClose, onPostCreated }) {
               setPostForm({ ...postForm, [e.target.name]: e.target.value })
             }
           />
-          <UploadImage fileRef={fileRef} />
+          <UploadImage files={selectedFiles} setFiles={setSelectedFiles} />
 
           <Form.Group className="mt-3">
             <Form.Label>Tìm người nhận</Form.Label>

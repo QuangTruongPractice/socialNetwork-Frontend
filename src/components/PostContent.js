@@ -4,16 +4,20 @@ import { authApis, endpoints } from "../configs/Apis";
 import { useNavigate } from "react-router-dom";
 import MySpinner from "./layout/MySpinner";
 import Avatar from "./layout/Avatar";
+import PostMediaGrid from "./layout/PostMediaGrid";
+import UploadImage from "./layout/UploadImage";
 
 const PostContent = ({ post, user, reload }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedContent, setEditedContent] = useState(post.content);
-  const [editedImage, setEditedImage] = useState(null);
+  const [editedFiles, setEditedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
   const handleEdit = () => {
     setShowEditModal(true);
+    setEditedContent(post.content);
+    setEditedFiles([]);
   };
 
   const handleSaveEdit = async () => {
@@ -21,11 +25,11 @@ const PostContent = ({ post, user, reload }) => {
     try {
       setLoading(true);
       const formData = new FormData();
-      if (editedContent) {
-        formData.append("content", editedContent);
-      }
-      if (editedImage) {
-        formData.append("image", editedImage);
+      formData.append("content", editedContent);
+      if (editedFiles.length > 0) {
+        editedFiles.forEach(item => {
+          formData.append("image", item.file);
+        });
       }
       await authApis().put(endpoints["edit-post-detail"](post.id), formData);
       setShowEditModal(false);
@@ -52,7 +56,7 @@ const PostContent = ({ post, user, reload }) => {
       <Card.Header className="d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center">
           <Avatar src={post.authorAvatar} size={40} />
-          <strong>{post.authorFullname}</strong>
+          <strong className="ms-2">{post.authorFullname}</strong>
         </div>
 
         {user.id === post.authorId && (
@@ -71,7 +75,7 @@ const PostContent = ({ post, user, reload }) => {
           </div>
         )}
 
-        <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+        <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
           <Modal.Header closeButton>
             <Modal.Title>Chỉnh sửa bài viết</Modal.Title>
           </Modal.Header>
@@ -80,7 +84,8 @@ const PostContent = ({ post, user, reload }) => {
               <MySpinner />
             ) : (
               <Form>
-                <Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nội dung</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={4}
@@ -89,12 +94,7 @@ const PostContent = ({ post, user, reload }) => {
                   />
                 </Form.Group>
                 <Form.Group className="mb-3">
-                  <Form.Label>Ảnh</Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setEditedImage(e.target.files[0])}
-                  />
+                  <UploadImage files={editedFiles} setFiles={setEditedFiles} />
                 </Form.Group>
               </Form>
             )}
@@ -103,7 +103,7 @@ const PostContent = ({ post, user, reload }) => {
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
               Hủy
             </Button>
-            <Button variant="primary" onClick={handleSaveEdit}>
+            <Button variant="primary" onClick={handleSaveEdit} disabled={loading}>
               Lưu
             </Button>
           </Modal.Footer>
@@ -113,28 +113,28 @@ const PostContent = ({ post, user, reload }) => {
       <Card.Body>
         <Card.Text>{post.content}</Card.Text>
 
-        {post.image && (
-          <div className="text-center mb-3">
-            <img src={post.image} alt="Post" className="img-fluid" />
-          </div>
-        )}
+        <PostMediaGrid medias={post.medias} fallbackImage={post.image} fallbackVideo={post.video} />
 
         {post.surveyOptions && post.surveyOptions.length > 0 && (
-          <div className="mt-3">
-            <strong>Khảo sát:</strong>
-            <ul>
+          <div className="mt-3 p-3 bg-light rounded border">
+            <strong className="d-block mb-2">Khảo sát:</strong>
+            <ul className="list-unstyled">
               {post.surveyOptions.map((option) => (
-                <div key={option.id}>
-                  <p>
-                    {option.text} ({option.voteCount} bình chọn)
-                  </p>
-                </div>
+                <li key={option.id} className="mb-2">
+                  <div className="d-flex justify-content-between">
+                    <span>{option.text}</span>
+                    <span className="text-primary">{option.voteCount} bình chọn</span>
+                  </div>
+                  <div className="progress mt-1" style={{ height: "10px" }}>
+                    <div className="progress-bar" style={{ width: `${Math.min(100, option.voteCount * 10)}%` }}></div>
+                  </div>
+                </li>
               ))}
             </ul>
           </div>
         )}
 
-        <div className="text-muted">
+        <div className="text-muted mt-3 pt-3 border-top">
           <small>Ngày đăng: {post.createdAt}</small>
         </div>
       </Card.Body>

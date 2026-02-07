@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Container, Row, Col } from "react-bootstrap";
 import MySpinner from "./layout/MySpinner";
@@ -14,7 +14,7 @@ const PostDetail = () => {
   const [loading, setLoading] = useState(true);
   const [user] = useContext(MyUserContext);
 
-  const loadPostDetail = async () => {
+  const loadPostDetail = useCallback(async () => {
     try {
       const res = await getPostDetail(postId);
       setPost(res.post);
@@ -24,11 +24,11 @@ const PostDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId]);
 
   useEffect(() => {
     loadPostDetail();
-  }, [postId]);
+  }, [loadPostDetail]);
 
   if (loading || !post) return <MySpinner />;
 

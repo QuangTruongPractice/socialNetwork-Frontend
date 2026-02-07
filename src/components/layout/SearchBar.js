@@ -12,28 +12,28 @@ export default function SearchBar() {
   const [results, setResults] = useState([]);
   const navigate = useNavigate();
 
-  const validateSearch = () => {
-    return kw.trim().length > 0;
-  };
-
-  const loadUsers = async () => {
-    if (!validateSearch()) {
-      setResults([]);
-      return;
-    }
-
-    try {
-      let url = `${endpoints["find-user"]}?name=${kw}`;
-      console.info(url);
-
-      let res = await Apis.get(url);
-      setResults(res.data.slice(0, 5));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
+    const validateSearch = () => {
+      return kw.trim().length > 0;
+    };
+
+    const loadUsers = async () => {
+      if (!validateSearch()) {
+        setResults([]);
+        return;
+      }
+
+      try {
+        let url = `${endpoints["find-user"]}?name=${kw}`;
+        console.info(url);
+
+        let res = await Apis.get(url);
+        setResults(res.data.slice(0, 5));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     const timer = setTimeout(() => {
       loadUsers();
     }, 500);

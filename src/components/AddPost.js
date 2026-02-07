@@ -8,9 +8,9 @@ import ModalPostFooter from "./layout/ModalPostFooter";
 export default function AddPost({ onClose, onPostCreated }) {
   const [error, setError] = useState("");
   const formRef = useRef();
-  const fileRef = useRef();
   const [postForm, setPostForm] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const validate = () => {
     if (!postForm.content || postForm.content.trim().length < 5) {
@@ -27,14 +27,18 @@ export default function AddPost({ onClose, onPostCreated }) {
         setLoading(true);
         const formData = new FormData();
         for (let key in postForm) formData.append(key, postForm[key]);
-        if (fileRef.current?.files?.[0]) {
-          formData.append("image", fileRef.current.files[0]);
+
+        if (selectedFiles.length > 0) {
+          selectedFiles.forEach(item => {
+            formData.append("image", item.file);
+          });
         }
+
         let res = await createPost(formData);
-        if (res.status === 201){
-            console.info(res.data);
-            onPostCreated(res.data);
-            onClose();
+        if (res.status === 201) {
+          console.info(res.data);
+          onPostCreated(res.data);
+          onClose();
         }
       } catch (ex) {
         console.error("Lỗi khi đăng bài:", ex);
@@ -59,7 +63,7 @@ export default function AddPost({ onClose, onPostCreated }) {
               setPostForm({ ...postForm, [e.target.name]: e.target.value })
             }
           />
-          <UploadImage fileRef={fileRef} />
+          <UploadImage files={selectedFiles} setFiles={setSelectedFiles} />
         </Modal.Body>
         <ModalPostFooter onClose={onClose} loading={loading} />
       </Form>

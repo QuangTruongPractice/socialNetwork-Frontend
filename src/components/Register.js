@@ -109,6 +109,8 @@ const Register = () => {
   const register = async (event) => {
     event.preventDefault();
 
+    console.log("Register processing...", user); // Debug log
+
     if (validate()) {
       try {
         setLoading(true);
@@ -119,6 +121,8 @@ const Register = () => {
         if (avatar.current.files.length > 0) {
           formData.append("avatar", avatar.current.files[0]);
         }
+
+        console.log("Sending API request..."); // Debug log
         let res = await Apis.post(endpoints["register"], formData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -127,10 +131,19 @@ const Register = () => {
 
         if (res.status === 201) nav("/login");
       } catch (ex) {
-        setMsg(ex.response.data.error);
+        console.error("Register Error:", ex);
+        let errorMessage = "Đã có lỗi xảy ra";
+        if (ex.response && ex.response.data && ex.response.data.error) {
+          errorMessage = ex.response.data.error;
+        } else if (ex.message) {
+          errorMessage = ex.message;
+        }
+        setMsg(errorMessage);
       } finally {
         setLoading(false);
       }
+    } else {
+      console.log("Validation failed"); // Debug log
     }
   };
   return (
@@ -159,7 +172,7 @@ const Register = () => {
                     ) : (
                       <TextInputField
                         {...i}
-                        type={i.type} 
+                        type={i.type}
                         value={user[i.field]}
                         onChange={(e) =>
                           setUser({ ...user, [i.field]: e.target.value })

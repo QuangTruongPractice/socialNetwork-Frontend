@@ -1,20 +1,21 @@
 import { Card } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import PostMediaGrid from "./PostMediaGrid";
 
-export default function PostMiddle({ id, content, image }) {
+export default function PostMiddle({ id, content, image, video, medias }) {
+  const nav = useNavigate();
+
+  const handleMediaClick = () => {
+    nav(`/post/${id}`);
+  };
+
   return (
-    <Link to={`/post/${id}`} className="text-decoration-none text-dark">
-      <Card.Text>{content}</Card.Text>
-      {image && (
-        <div className="text-center mt-3">
-          <img
-            src={image}
-            alt="post"
-            className="img-fluid rounded"
-            style={{ maxHeight: "400px", objectFit: "contain" }}
-          />
-        </div>
-      )}
-    </Link>
+    <div className="post-middle">
+      <Link to={`/post/${id}`} className="text-decoration-none text-dark">
+        <Card.Text>{content}</Card.Text>
+      </Link>
+
+      <PostMediaGrid medias={medias} fallbackImage={image} fallbackVideo={video} onMediaClick={handleMediaClick} />
+    </div>
   );
 }

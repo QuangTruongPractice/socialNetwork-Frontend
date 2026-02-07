@@ -50,7 +50,7 @@ const MyProfile = () => {
 
       <h3 className="mt-3">Bài viết của bạn</h3>
       <Row className="mt-3">
-        {data.posts.length === 0 ? (
+        {!data?.posts || data.posts.length === 0 ? (
           <p className="text-muted">Bạn chưa có bài viết nào.</p>
         ) : (
           data.posts.map((p) => (
