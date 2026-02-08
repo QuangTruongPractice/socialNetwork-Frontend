@@ -25,7 +25,7 @@ export default function SearchBar() {
 
       try {
         let url = `${endpoints["find-user"]}?name=${kw}`;
-        console.info(url);
+
 
         let res = await Apis.get(url);
         setResults(res.data.slice(0, 5));
@@ -55,7 +55,7 @@ export default function SearchBar() {
         variant="outlined"
         value={kw}
         onChange={(e) => setKw(e.target.value)}
-        sx={{ width: 300, backgroundColor: "white", borderRadius: 1 }}
+        sx={{ width: "100%", backgroundColor: "white", borderRadius: 1 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">

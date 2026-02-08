@@ -36,7 +36,7 @@ export default function AddPost({ onClose, onPostCreated }) {
 
         let res = await createPost(formData);
         if (res.status === 201) {
-          console.info(res.data);
+
           onPostCreated(res.data);
           onClose();
         }

@@ -10,34 +10,57 @@ import {
   Modal,
 } from "react-bootstrap";
 import Avatar from "./layout/Avatar";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "react-bootstrap";
 import { authApis, endpoints } from "../configs/Apis";
 import ChatPopup from "./ChatPopup";
+import { getChatRoomId as fetchRoomId } from "../configs/LoadData";
 import { useContext } from "react";
 import BasicInfoProfile from "./layout/BasicInfoProfile";
 import CareerInfoProfile from "./layout/CareerInfoProfile";
 import { MyUserContext } from "../configs/Contexts";
 
 const Profile = ({ profile, role, user }) => {
-  const [isFollowing, setIsFollowing] = useState(false);
+  // const [isFollowing, setIsFollowing] = useState(false); // Managed by React Query now
   const [showChat, setShowChat] = useState(false);
   const [currentUser] = useContext(MyUserContext);
   const [showModal, setShowModal] = useState(false);
+  const [activeRoomId, setActiveRoomId] = useState(null);
 
-  useEffect(() => {
-    const checkFollowing = async () => {
-      if (!user?.id) return;
-      try {
-        const res = await authApis().get(endpoints["check-follow"](user.id));
-        setIsFollowing(res.data.following);
-      } catch (err) {
-        console.error("Lỗi khi kiểm tra theo dõi:", err);
-      }
-    };
+  const { data: followData } = useQuery({
+    queryKey: ["follow", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { following: false };
+      const res = await authApis().get(endpoints["check-follow"](user.id));
+      return res.data;
+    },
+    enabled: !!user?.id,
+  });
 
-    checkFollowing();
-  }, [user?.id]);
+  const queryClient = useQueryClient();
+
+  const mutationFollow = useMutation({
+    mutationFn: (id) => authApis().post(endpoints["follow"](id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["follow", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["following"] });
+    },
+    onError: (err) => {
+      console.error("Follow thất bại:", err);
+    }
+  });
+
+  const mutationUnfollow = useMutation({
+    mutationFn: (id) => authApis().delete(endpoints["follow"](id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["follow", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["following"] });
+    },
+    onError: (err) => {
+      console.error("Hủy follow thất bại:", err);
+    }
+  });
 
   const handleImageClick = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
@@ -50,35 +73,18 @@ const Profile = ({ profile, role, user }) => {
     );
   }
 
-  const follow = async (id) => {
-    if (!currentUser?.id) return;
+  const isFollowing = followData?.following || false;
+
+  const handleOpenChat = async () => {
+    if (!currentUser?.id || !user?.id) return;
     try {
-      if (currentUser.id === id) {
-        return;
-      } else {
-        await authApis().post(endpoints["follow"](id));
-        setIsFollowing(true);
-      }
+      const rid = await fetchRoomId(currentUser.id, user.id);
+      setActiveRoomId(rid);
+      setShowChat(true);
     } catch (err) {
-      console.error("Follow thất bại:", err);
+      console.error("Lỗi khi mở chat:", err);
     }
   };
-
-  const unfollow = async (id) => {
-    try {
-      await authApis().delete(endpoints["follow"](id));
-      setIsFollowing(false);
-    } catch (err) {
-      console.error("Hủy follow thất bại:", err);
-    }
-  };
-
-  const getChatRoomId = (id1, id2) => {
-    const sorted = [id1, id2].sort((a, b) => a - b);
-    return `room_${sorted[0]}_${sorted[1]}`;
-  };
-
-  const chatRoomId = (currentUser?.id && user?.id) ? getChatRoomId(currentUser.id, user.id) : null;
 
   if (!profile) {
     // Gracefully handle missing profile record (e.g. for some roles or internal errors)
@@ -137,17 +143,17 @@ const Profile = ({ profile, role, user }) => {
               <Button
                 variant="outline-primary"
                 className="me-2"
-                onClick={() => setShowChat(true)}
+                onClick={handleOpenChat}
               >
                 Nhắn tin
               </Button>
               {isFollowing ? (
-                <Button variant="success" onClick={() => unfollow(user.id)}>
-                  Đã theo dõi
+                <Button variant="success" onClick={() => mutationUnfollow.mutate(user.id)} disabled={mutationUnfollow.isPending}>
+                  {mutationUnfollow.isPending ? "Đang xử lý..." : "Đã theo dõi"}
                 </Button>
               ) : (
-                <Button variant="primary" onClick={() => follow(user.id)}>
-                  Theo dõi
+                <Button variant="primary" onClick={() => mutationFollow.mutate(user.id)} disabled={mutationFollow.isPending}>
+                  {mutationFollow.isPending ? "Đang xử lý..." : "Theo dõi"}
                 </Button>
               )}
             </Col>
@@ -179,9 +185,9 @@ const Profile = ({ profile, role, user }) => {
           <Image src={profile.coverImage} fluid />
         </Modal.Body>
       </Modal>
-      {showChat && chatRoomId && (
+      {showChat && activeRoomId && (
         <ChatPopup
-          roomId={chatRoomId}
+          roomId={activeRoomId}
           currentUser={currentUser || user}
           targetUser={user}
           onClose={() => setShowChat(false)}

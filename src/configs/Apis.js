@@ -2,6 +2,7 @@ import axios from "axios";
 import cookie from 'react-cookies'
 
 const BASE_URL = 'http://localhost:8080/socialNetwork/api';
+export const HOST_URL = 'http://localhost:8080/socialNetwork';
 
 export const endpoints = {
     'posts': '/posts',
@@ -26,12 +27,16 @@ export const endpoints = {
     'vote': '/secure/posts/survey/vote',
     'reaction': (id) => `/posts/${id}/reactions`,
     'auth-reaction': (id) => `/secure/posts/${id}/reactions`,
-    'get-follower':'/secure/follows/followers',
-    'get-following':'/secure/follows/followings',
+    'get-follower': '/secure/follows/followers',
+    'get-following': '/secure/follows/followings',
     'follow': (id) => `/secure/follows/${id}`,
     'check-follow': (id) => `/secure/follows/check/${id}`,
     'mark-read': (id) => `/notifications/${id}/read`,
     'notification': '/secure/notifications',
+    'chat-history': (u1, u2) => `/secure/chat/history/${u1}/${u2}`,
+    'chat-room': (u1, u2) => `/secure/chat/room/${u1}/${u2}`,
+    'chat-upload': '/secure/chat/upload',
+    'chat-conversations': '/secure/chat/conversations',
 }
 
 export const authApis = () => axios.create({

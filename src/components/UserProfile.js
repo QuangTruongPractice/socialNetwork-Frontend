@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Profile from "../components/Profile";
 import PostCard from "../components/PostCard";
 import SurveyCard from "../components/SurveyCard";
@@ -7,29 +7,14 @@ import { useParams } from "react-router-dom";
 import { userProfile } from "../configs/LoadData";
 
 const UserProfile = () => {
-  const [data, setData] = useState(null);
-  const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(true);
   const { userId } = useParams();
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const res = await userProfile(userId);
-        setData(res);
-        setRole(res.role);
-      } catch (err) {
-        console.error("Lỗi khi tải hồ sơ:", err);
-        console.error("Chi tiết lỗi:", err.response?.data || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["userProfile", userId],
+    queryFn: () => userProfile(userId),
+  });
 
-    loadData();
-  }, [userId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center mt-5">
         <Spinner animation="border" variant="primary" />
@@ -37,6 +22,14 @@ const UserProfile = () => {
       </div>
     );
   }
+
+  if (error) {
+    return <div className="text-center mt-5 alert alert-danger">Lỗi khi tải hồ sơ: {error.message}</div>;
+  }
+
+  const role = data?.role;
+
+
 
   return (
     <Container className="mt-4">

@@ -20,6 +20,10 @@ import LoginHandle from "./components/LoginHandle";
 import Following from "./components/Following";
 import Follower from "./components/Follower";
 import NotificationPage from "./components/NotificationPage";
+import ContactChatPage from "./components/ContactChatPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }) => {
   const [user] = useContext(MyUserContext);
@@ -56,38 +60,43 @@ const Layout = () => {
     <>
       {!hideHeader && <Header />}
 
-        <Routes>
-          <Route path="/redirect" element={<LoginHandle />} />
-          <Route path="/add-alumni-profile" element={<ProtectedRoute><AddAlumniProfile /></ProtectedRoute>} />
-          <Route path="/add-lecturer-profile" element={<ProtectedRoute><AddLecturerProfile /></ProtectedRoute>} />
-          <Route path="/add-admin-profile" element={<ProtectedRoute><AddAdminProfile /></ProtectedRoute>} />
-          <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-          <Route path="/" element={<Info />} />
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/follower" element={<ProtectedRoute><Follower /></ProtectedRoute>} />
-          <Route path="/following" element={<ProtectedRoute><Following /></ProtectedRoute>} />
-          <Route path="/notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
-          <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-          <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-          <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-          <Route path="/user-profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-          <Route path="*" element={
-            user ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
-          } />
-        </Routes>
+      <Routes>
+        <Route path="/redirect" element={<LoginHandle />} />
+        <Route path="/add-alumni-profile" element={<ProtectedRoute><AddAlumniProfile /></ProtectedRoute>} />
+        <Route path="/add-lecturer-profile" element={<ProtectedRoute><AddLecturerProfile /></ProtectedRoute>} />
+        <Route path="/add-admin-profile" element={<ProtectedRoute><AddAdminProfile /></ProtectedRoute>} />
+        <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+        <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+        <Route path="/" element={<Info />} />
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/follower" element={<ProtectedRoute><Follower /></ProtectedRoute>} />
+        <Route path="/following" element={<ProtectedRoute><Following /></ProtectedRoute>} />
+        <Route path="/notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
+        <Route path="/contacts" element={<ProtectedRoute><ContactChatPage /></ProtectedRoute>} />
+        <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+        <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/user-profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="*" element={
+          user ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
+        } />
+      </Routes>
     </>
   );
 };
+
+
 
 const App = () => {
   let [user, dispatch] = useReducer(MyUserReducer, JSON.parse(localStorage.getItem("user")));
   return (
     <MyUserContext.Provider value={[user, dispatch]}>
-      <BrowserRouter>
-        <Layout />
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Layout />
+        </BrowserRouter>
+      </QueryClientProvider>
     </MyUserContext.Provider>
   );
 };

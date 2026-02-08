@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Profile from "../components/Profile";
 import PostCard from "../components/PostCard";
 import SurveyCard from "../components/SurveyCard";
@@ -7,28 +7,14 @@ import { checkProfile } from "../configs/LoadData";
 import { useNavigate } from "react-router-dom";
 
 const MyProfile = () => {
-  const [data, setData] = useState(null);
-  const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["myProfile"],
+    queryFn: checkProfile,
+  });
+
   const nav = useNavigate();
 
-  const loadData = async () => {
-    try {
-      const res = await checkProfile();
-      setData(res);
-      setRole(res.role);
-    } catch (err) {
-      console.error("Lỗi khi tải hồ sơ:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center mt-5">
         <Spinner animation="border" variant="primary" />
@@ -36,6 +22,14 @@ const MyProfile = () => {
       </div>
     );
   }
+
+  if (error) {
+    return <div className="text-center mt-5 alert alert-danger">Lỗi khi tải hồ sơ: {error.message}</div>;
+  }
+
+  const role = data?.role;
+
+
 
   return (
     <Container className="mt-4">

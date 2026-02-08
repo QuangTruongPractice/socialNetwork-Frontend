@@ -60,7 +60,7 @@ export default function AddSurvey({ onClose, onPostCreated }) {
 
         let res = await createSurvey(formData);
         if (res.status === 201) {
-          console.info(res.data);
+
           onPostCreated(res.data);
           onClose();
         }

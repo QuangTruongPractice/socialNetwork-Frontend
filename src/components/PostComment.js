@@ -3,22 +3,67 @@ import { Form, Button, Card, Alert, Modal } from "react-bootstrap";
 import { authApis, endpoints } from "../configs/Apis";
 import MySpinner from "./layout/MySpinner";
 import Avatar from "./layout/Avatar";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const PostComment = ({
   postId,
   comments,
-  setComments,
   currentUserId,
   postAuthorId,
   isLocked,
-  setIsLocked,
 }) => {
   const [newComment, setNewComment] = useState("");
   const [msg, setMsg] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [showMenuId, setShowMenuId] = useState(null);
   const [editComment, setEditComment] = useState(null);
   const [editContent, setEditContent] = useState("");
+
+  const queryClient = useQueryClient();
+
+  const invalidateFn = () => queryClient.invalidateQueries({ queryKey: ["post", postId] });
+
+  const mutationAdd = useMutation({
+    mutationFn: (content) => authApis().post(endpoints["post-comments"](postId), { content }),
+    onSuccess: () => {
+      setNewComment("");
+      setMsg(null);
+      invalidateFn();
+    },
+    onError: () => setMsg("Đăng bình luận thất bại.")
+  });
+
+  const mutationEdit = useMutation({
+    mutationFn: ({ id, content }) => authApis().put(endpoints["post-comments-detail"](postId, id), { content }),
+    onSuccess: () => {
+      setEditComment(null);
+      setEditContent("");
+      setMsg(null);
+      invalidateFn();
+    },
+    onError: () => setMsg("Cập nhật bình luận thất bại.")
+  });
+
+  const mutationDelete = useMutation({
+    mutationFn: (id) => authApis().delete(endpoints["comment-detail"](id)),
+    onSuccess: () => invalidateFn(),
+    onError: () => setMsg("Xóa bình luận thất bại.")
+  });
+
+  const mutationLock = useMutation({
+    mutationFn: () => {
+      const formData = new FormData();
+      formData.append("isLocked", !isLocked);
+      return authApis().put(endpoints["edit-post-detail"](postId), formData);
+    },
+    onSuccess: () => invalidateFn(),
+    onError: () => setMsg("Lỗi khi thay đổi trạng thái khóa bình luận.")
+  });
+
+  const handleEdit = (comment) => {
+    setEditComment(comment);
+    setEditContent(comment.content);
+    setShowMenuId(null);
+  };
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
@@ -26,24 +71,7 @@ const PostComment = ({
       setMsg("Bình luận không được để trống.");
       return;
     }
-    try {
-      setLoading(true);
-      const res = await authApis().post(endpoints["post-comments"](postId), {
-        content: newComment,
-      });
-      setComments((prev) => [res.data, ...prev]);
-      setNewComment("");
-      setMsg(null);
-    } catch (err) {
-      setMsg("Đăng bình luận thất bại.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = (comment) => {
-    setEditComment(comment);
-    setEditContent(comment.content);
+    mutationAdd.mutate(newComment);
   };
 
   const handleEditSubmit = async () => {
@@ -51,47 +79,16 @@ const PostComment = ({
       setMsg("Nội dung sửa không được để trống.");
       return;
     }
-    try {
-      await authApis().put(
-        endpoints["post-comments-detail"](postId, editComment.id),
-        { content: editContent }
-      );
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === editComment.id
-            ? { ...c, content: editContent, updatedDate: new Date() }
-            : c
-        )
-      );
-      setEditComment(null);
-      setEditContent("");
-      setMsg(null);
-    } catch (err) {
-      setMsg("Cập nhật bình luận thất bại.");
-    }
+    mutationEdit.mutate({ id: editComment.id, content: editContent });
   };
 
   const handleDelete = async (commentId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
-    try {
-      await authApis().delete(
-        endpoints["comment-detail"](commentId)
-      );
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-    } catch (err) {
-      setMsg("Xóa bình luận thất bại.");
-    }
+    mutationDelete.mutate(commentId);
   };
 
   const handleLockComments = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("isLocked", !isLocked);
-      await authApis().put(endpoints["edit-post-detail"](postId), formData);
-      setIsLocked(!isLocked);
-    } catch (err) {
-      setMsg("Lỗi khi thay đổi trạng thái khóa bình luận.");
-    }
+    mutationLock.mutate();
   };
 
   const isPostOwner = currentUserId === postAuthorId;
@@ -106,8 +103,9 @@ const PostComment = ({
               variant={isLocked ? "success" : "warning"}
               size="sm"
               onClick={handleLockComments}
+              disabled={mutationLock.isPending}
             >
-              {isLocked ? "Mở khóa" : "Khóa bình luận"}
+              {mutationLock.isPending ? "Đang xử lý..." : (isLocked ? "Mở khóa" : "Khóa bình luận")}
             </Button>
           )}
         </div>
@@ -130,13 +128,13 @@ const PostComment = ({
                   onChange={(e) => setNewComment(e.target.value)}
                 />
               </Form.Group>
-              <Button type="submit" variant="primary" size="sm" disabled={loading}>
-                {loading ? <MySpinner /> : "Gửi"}
+              <Button type="submit" variant="primary" size="sm" disabled={mutationAdd.isPending}>
+                {mutationAdd.isPending ? <MySpinner /> : "Gửi"}
               </Button>
             </Form>
 
-            <div style={{ maxHeight: "600px" }}>
-              {comments.map((cmt) => {
+            <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+              {comments && comments.map((cmt) => {
                 const canEdit = currentUserId === cmt.userId;
                 const canDelete = canEdit || isPostOwner;
 
@@ -213,8 +211,8 @@ const PostComment = ({
           <Button variant="secondary" onClick={() => setEditComment(null)}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={handleEditSubmit}>
-            Lưu
+          <Button variant="primary" onClick={handleEditSubmit} disabled={mutationEdit.isPending}>
+            {mutationEdit.isPending ? "Đang lưu..." : "Lưu"}
           </Button>
         </Modal.Footer>
       </Modal>

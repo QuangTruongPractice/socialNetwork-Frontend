@@ -108,17 +108,43 @@ export const editProfile = async (submitData) => {
   return res;
 };
 
-export const loadFollower = async() => {
+export const loadFollower = async () => {
   const res = await authApis().get(endpoints['get-follower']);
   return res.data;
 }
 
-export const loadFollowing = async() => {
+export const loadFollowing = async () => {
   const res = await authApis().get(endpoints["get-following"]);
   return res.data;
 }
 
-export const loadNotification = async() => {
+export const loadNotification = async () => {
   const res = await authApis().get(endpoints['notification']);
   return res.data;
 }
+
+export const getChatHistory = async (u1, u2) => {
+  const res = await authApis().get(endpoints["chat-history"](u1, u2));
+  return res.data;
+};
+
+export const getChatRoomId = async (u1, u2) => {
+  const res = await authApis().get(endpoints["chat-room"](u1, u2));
+  return res.data;
+};
+
+export const uploadChatImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await authApis().post(endpoints["chat-upload"], formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+export const getConversations = async () => {
+  const res = await authApis().get(endpoints["chat-conversations"]);
+  return res.data;
+};

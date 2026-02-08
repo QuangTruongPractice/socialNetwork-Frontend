@@ -1,38 +1,32 @@
-import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Apis, { endpoints } from "../configs/Apis";
 import MySpinner from "./layout/MySpinner";
 import { Container, ListGroup, Badge } from "react-bootstrap";
-import {loadNotification} from "../configs/LoadData"
+import { loadNotification } from "../configs/LoadData"
 
 const NotificationPage = () => {
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
-    const loadNotifications = async () => {
-        try {
-            const response = await loadNotification();
-            setNotifications(response);
-        } catch (error) {
-            console.error("Error loading notifications:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: notifications, isLoading, isError } = useQuery({
+        queryKey: ["notifications"],
+        queryFn: loadNotification,
+    });
 
-    const markAsRead = async (id) => {
-        try {
-            await Apis.put(endpoints['mark-read'](id));
-            setNotifications(prev =>
-                prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    const mutationRead = useMutation({
+        mutationFn: (id) => Apis.put(endpoints['mark-read'](id)),
+        onSuccess: (data, variables) => {
+            // Optimistically update or just invalidate
+            queryClient.setQueryData(["notifications"], (oldData) =>
+                oldData ? oldData.map(n => n.id === variables ? { ...n, isRead: true } : n) : oldData
             );
-        } catch (err) {
+            // Also invalidate to be sure
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            // Invalidate badge count if it exists elsewhere
+        },
+        onError: (err) => {
             console.error("Lỗi khi đánh dấu đã đọc:", err);
         }
-    };
-
-    useEffect(() => {
-        loadNotifications();
-    }, []);
+    });
 
     const formatDate = (arr) => {
         if (!Array.isArray(arr) || arr.length < 3) return "Không rõ ngày";
@@ -40,7 +34,8 @@ const NotificationPage = () => {
         return `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`;
     };
 
-    if (loading) return <MySpinner />;
+    if (isLoading) return <MySpinner />;
+    if (isError) return <div className="text-center mt-5">Lỗi tải thông báo.</div>;
 
     return (
         <Container className="mt-4">
@@ -49,23 +44,26 @@ const NotificationPage = () => {
                 <p>Không có thông báo nào.</p>
             ) : (
                 <ListGroup>
-                    {notifications.map((noti) => (
-                        <ListGroup.Item
-                            action
-                            key={noti.id}
-                            onClick={() => markAsRead(noti.id)}
-                            variant={noti.read ? "light" : "warning"}
-                            className="d-flex justify-content-between align-items-start"
-                        >
-                            <div>
-                                <div>{noti.message}</div>
-                                <small className="text-muted">
-                                    {formatDate(noti.createdAt)}
-                                </small>
-                            </div>
-                            {!noti.read && <Badge bg="danger">Mới</Badge>}
-                        </ListGroup.Item>
-                    ))}
+                    {notifications.map((noti) => {
+                        const isRead = noti.isRead || noti.read;
+                        return (
+                            <ListGroup.Item
+                                action
+                                key={noti.id}
+                                onClick={() => mutationRead.mutate(noti.id)}
+                                variant={isRead ? "light" : "warning"}
+                                className="d-flex justify-content-between align-items-start"
+                            >
+                                <div>
+                                    <div>{noti.message}</div>
+                                    <small className="text-muted">
+                                        {formatDate(noti.createdAt)}
+                                    </small>
+                                </div>
+                                {!isRead && <Badge bg="danger">Mới</Badge>}
+                            </ListGroup.Item>
+                        );
+                    })}
                 </ListGroup>
             )}
         </Container>

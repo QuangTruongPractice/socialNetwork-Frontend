@@ -109,7 +109,7 @@ const Register = () => {
   const register = async (event) => {
     event.preventDefault();
 
-    console.log("Register processing...", user); // Debug log
+
 
     if (validate()) {
       try {
@@ -122,7 +122,7 @@ const Register = () => {
           formData.append("avatar", avatar.current.files[0]);
         }
 
-        console.log("Sending API request..."); // Debug log
+
         let res = await Apis.post(endpoints["register"], formData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -143,7 +143,7 @@ const Register = () => {
         setLoading(false);
       }
     } else {
-      console.log("Validation failed"); // Debug log
+
     }
   };
   return (

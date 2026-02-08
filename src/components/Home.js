@@ -1,72 +1,85 @@
-import { useState, useEffect } from "react";
-import { Spinner, Container } from "react-bootstrap";
+import { useEffect } from "react";
+import { Spinner, Container, Alert } from "react-bootstrap";
 import PostCard from "../components/PostCard";
 import SurveyCard from "../components/SurveyCard";
 import PostForm from "../components/PostForm";
 import { getPosts } from "../configs/LoadData";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 
 const Home = () => {
-  const [loading, setLoading] = useState(false);
-  const [posts, setPosts] = useState([]);
-  const [page, setPage] = useState(1);
+  const { ref, inView } = useInView();
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ["posts"],
+    queryFn: ({ pageParam = 1 }) => getPosts(pageParam),
+    getNextPageParam: (lastPage, allPages) => {
+      // Return undefined if no more pages
+      return lastPage.length === 0 ? undefined : allPages.length + 1;
+    },
+  });
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        setLoading(true);
-        const data = await getPosts(page);
-        if (Array.isArray(data)) {
-          if (page === 1) setPosts(data);
-          else setPosts((prev) => [...prev, ...data]);
-        } else {
-          console.error("Dữ liệu nhận được không phải là mảng:", data);
-        }
-      } catch (error) {
-        console.error("Lỗi khi load bài viết:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPosts();
-  }, [page]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const fullHeight = document.body.offsetHeight;
-
-      if (!loading && scrollY + viewportHeight >= fullHeight * 0.8) {
-        setPage((prev) => prev + 1);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading]);
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
 
   const handlePostCreated = (newPost) => {
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+    window.scrollTo(0, 0);
   };
 
   return (
     <Container className="mt-4">
       <PostForm onPostCreated={handlePostCreated} />
-      {posts.map((p) =>
-        Array.isArray(p.post.surveyOptions) &&
-          p.post.surveyOptions.length > 0 ? (
-          <SurveyCard key={p.post.id} post={p.post} totalReacts={p.post.totalReacts}
-          />
-        ) : (
-          <PostCard key={p.post.id} post={p.post} totalReacts={p.post.totalReacts} />
-        )
-      )}
 
-      {loading && (
+      {status === "pending" ? (
         <div className="text-center my-3">
           <Spinner animation="border" />
         </div>
+      ) : status === "error" ? (
+        <Alert variant="danger">Error: {error.message}</Alert>
+      ) : (
+        <>
+          {data.pages.map((page) =>
+            page.map((p) =>
+              Array.isArray(p.post.surveyOptions) &&
+                p.post.surveyOptions.length > 0 ? (
+                <SurveyCard
+                  key={p.post.id}
+                  post={p.post}
+                  totalReacts={p.post.totalReacts}
+                />
+              ) : (
+                <PostCard
+                  key={p.post.id}
+                  post={p.post}
+                  totalReacts={p.post.totalReacts}
+                />
+              )
+            )
+          )}
+          <div ref={ref} className="text-center my-3">
+            {isFetchingNextPage ? (
+              <Spinner animation="border" size="sm" />
+            ) : hasNextPage ? (
+              // Simple observer element
+              <span style={{ visibility: 'hidden' }}>Load more</span>
+            ) : (
+              <p className="text-muted">No more posts</p>
+            )}
+          </div>
+        </>
       )}
     </Container>
   );

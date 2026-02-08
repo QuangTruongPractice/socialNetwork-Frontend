@@ -5,7 +5,7 @@ import { MyUserContext } from "../configs/Contexts";
 import TextInputField from "./layout/TextInputField";
 import SelectInputField from "./layout/SelectInputField";
 import { useNavigate } from "react-router-dom";
-import {editProfile} from "../configs/LoadData";
+import { editProfile } from "../configs/LoadData";
 
 const EditProfile = () => {
   const [user, dispatch] = useContext(MyUserContext);
@@ -87,7 +87,7 @@ const EditProfile = () => {
 
       if (res.status === 200) nav("/my-profile");
 
-      console.log("Dữ liệu gửi đi:", formData);
+
     } catch (err) {
       setMsg(err.response.data.error);
     } finally {
