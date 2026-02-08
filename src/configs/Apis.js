@@ -1,8 +1,8 @@
 import axios from "axios";
 import cookie from 'react-cookies'
 
-const BASE_URL = 'http://localhost:8080/socialNetwork/api';
-export const HOST_URL = 'http://localhost:8080/socialNetwork';
+const BASE_URL = 'https://socialnetwork-backend-n201.onrender.com/socialNetwork/api';
+export const HOST_URL = 'https://socialnetwork-backend-n201.onrender.com/socialNetwork';
 
 export const endpoints = {
     'posts': '/posts',
